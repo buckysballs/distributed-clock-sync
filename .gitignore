@@ -1,0 +1,8 @@
+target/
+.bsp/
+.idea/
+*.class
+*.log
+*.wasm
+proofs/
+keys/*.pem
