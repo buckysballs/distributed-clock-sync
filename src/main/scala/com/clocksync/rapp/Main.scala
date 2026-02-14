@@ -41,6 +41,7 @@ object Main extends IOApp {
     val nodeId = sys.env.getOrElse("NODE_ID", s"node-$nodeType")
     val genesisHost = sys.env.getOrElse("GENESIS_HOST", "localhost")
     val initialBpm = sys.env.getOrElse("INITIAL_BPM", "120.0").toDouble
+    val midiDevice = sys.env.get("MIDI_DEVICE")
 
     for {
       _ <- logger.info(banner)
@@ -66,6 +67,9 @@ object Main extends IOApp {
       // Start OSC bridge
       oscFiber <- OscClockBridge.start(pipelineState, readingsQueue, oscPort, nodeId).start
 
+      // Start MIDI bridge
+      midiFiber <- MidiClockBridge.start(pipelineState, midiDevice).start
+
       // Start HTTP server
       _ <- logger.info(s"Starting HTTP server on port $httpPort")
       _ <- EmberServerBuilder.default[IO]
@@ -84,6 +88,7 @@ object Main extends IOApp {
           IO.never
         }
         .guarantee(
+          midiFiber.cancel *>
           consensusFiber.cancel *>
           clockUpdateFiber.cancel *>
           oscFiber.cancel *>
